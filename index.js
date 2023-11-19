@@ -4,6 +4,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
+
 app.use(cors());
 app.use(express.json());
 
@@ -20,6 +21,16 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
+    const foodsCollection = client.db("RestoraDB").collection("foods");
+
+    // Store Foods to the database
+    app.post("/foods", async (req, res) => {
+      const newFood = req.body;
+      const result = await foodsCollection.insertOne(newFood);
+      console.log(result);
+      res.send(result);
+    });
+
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     // Send a ping to confirm a successful connection
