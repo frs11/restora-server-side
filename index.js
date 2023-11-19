@@ -1,9 +1,15 @@
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
+// const corsOptions = {
+//   origin: "http://localhost:5000",
+//   credentials: true,
+//   optionSuccessStatus: 200,
+// };
 
 app.use(cors());
 app.use(express.json());
@@ -22,12 +28,20 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const foodsCollection = client.db("RestoraDB").collection("foods");
+    const sampleCollection = client.db("RestoraDB").collection("sample");
 
     // Store Foods to the database
     app.post("/foods", async (req, res) => {
-      const newFood = req.body;
+      const newFood = req.body.newFood;
+      console.log(newFood);
       const result = await foodsCollection.insertOne(newFood);
       console.log(result);
+      res.send(result);
+    });
+
+    app.get("/foods", async (req, res) => {
+      const cursor = foodsCollection.find();
+      const result = await cursor.toArray();
       res.send(result);
     });
 
