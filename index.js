@@ -1,18 +1,20 @@
 const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
-// const corsOptions = {
-//   origin: "http://localhost:5000",
-//   credentials: true,
-//   optionSuccessStatus: 200,
-// };
 
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://localhost:5174"],
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.jmuxmrg.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -28,11 +30,26 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const foodsCollection = client.db("RestoraDB").collection("foods");
-    const sampleCollection = client.db("RestoraDB").collection("sample");
+
+    // Auth API
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      // console.log(user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1h",
+      });
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: false,
+          sameSite: "none",
+        })
+        .send({ success: true });
+    });
 
     // Store Foods to the database
     app.post("/foods", async (req, res) => {
-      const newFood = req.body.newFood;
+      const newFood = req.body;
       console.log(newFood);
       const result = await foodsCollection.insertOne(newFood);
       console.log(result);
