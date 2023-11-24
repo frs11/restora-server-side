@@ -16,6 +16,24 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+// Custom Middleware
+const VerifyToken = (req, res, next) => {
+  const CookieToken = req.cookie?.token;
+  console.log("token in the verify token", CookieToken);
+  if (!CookieToken) {
+    res.status(401).send({ message: "unauthorized access!" });
+  }
+  jwt.verify(CookieToken, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      console.log("error", err);
+      return res.status(401).send({ message: "unauthorized access!!" });
+    }
+    console.log("decoded data: ", decoded);
+    req.user = decoded;
+    next();
+  });
+};
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.jmuxmrg.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -58,6 +76,10 @@ async function run() {
 
     app.get("/foods", async (req, res) => {
       const cursor = foodsCollection.find();
+      // const token = req.cookies?.token;
+      // const user = req.query?.email;
+      console.log("email: ", user);
+      console.log("token: ", token);
       const result = await cursor.toArray();
       res.send(result);
     });
