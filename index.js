@@ -75,12 +75,15 @@ async function run() {
     });
 
     app.get("/foods", async (req, res) => {
-      const cursor = foodsCollection.find();
       // const token = req.cookies?.token;
-      // const user = req.query?.email;
-      console.log("email: ", user);
-      console.log("token: ", token);
-      const result = await cursor.toArray();
+      const page = parseInt(req.query.page);
+      const size = parseInt(req.query.size);
+      console.log("Page: ", page, "Size: ", size);
+      const result = await foodsCollection
+        .find()
+        .skip(page * size)
+        .limit(size)
+        .toArray();
       res.send(result);
     });
 
