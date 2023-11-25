@@ -75,10 +75,8 @@ async function run() {
     });
 
     app.get("/foods", async (req, res) => {
-      // const token = req.cookies?.token;
-      const page = parseInt(req.query.page);
-      const size = parseInt(req.query.size);
-      console.log("Page: ", page, "Size: ", size);
+      const page = parseInt(req.query?.page);
+      const size = parseInt(req.query?.size);
       const result = await foodsCollection
         .find()
         .skip(page * size)
@@ -87,7 +85,14 @@ async function run() {
       res.send(result);
     });
 
-    // Connect the client to the server	(optional starting in v4.7)
+    app.get(`/foods/:id`, async (req, res) => {
+      const foodId = req.params.id;
+      console.log("FoodID", foodId);
+      const foodQuery = { _id: new ObjectId(foodId) };
+      const result = await foodsCollection.findOne(foodQuery);
+      res.send(result);
+    });
+
     await client.connect();
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
@@ -95,8 +100,6 @@ async function run() {
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
   } finally {
-    // Ensures that the client will close when you finish/error
-    // await client.close();
   }
 }
 run().catch(console.dir);
