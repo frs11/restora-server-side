@@ -74,6 +74,7 @@ async function run() {
       res.send(result);
     });
 
+    // Get food Data
     app.get("/foods", async (req, res) => {
       const page = parseInt(req.query?.page);
       const size = parseInt(req.query?.size);
@@ -85,11 +86,46 @@ async function run() {
       res.send(result);
     });
 
+    // Get single food data
     app.get(`/foods/:id`, async (req, res) => {
       const foodId = req.params.id;
-      console.log("FoodID", foodId);
+      // console.log("FoodID", foodId);
       const foodQuery = { _id: new ObjectId(foodId) };
       const result = await foodsCollection.findOne(foodQuery);
+      res.send(result);
+    });
+
+    // Update a food data
+    app.put(`/foods/update`, async (req, res) => {
+      const id = req.query.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedFood = req.body;
+      // console.log(updatedFood);
+      const addedBy = {
+        name: updatedFood.addedBy.userName,
+        email: updatedFood.addedBy.userEmail,
+      };
+
+      const UpdatedFoodInfo = {
+        $set: {
+          foodName: updatedFood.name,
+          foodCategory: updatedFood.category,
+          foodImage: updatedFood.image,
+          quantity: updatedFood.quantity,
+          price: updatedFood.price,
+          addedBy: addedBy,
+          foodOrigin: updatedFood.origin,
+          description: updatedFood.description,
+        },
+      };
+
+      const result = await foodsCollection.updateOne(
+        filter,
+        UpdatedFoodInfo,
+        options
+      );
+      // console.log(result);
       res.send(result);
     });
 
