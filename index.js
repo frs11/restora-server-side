@@ -49,18 +49,37 @@ async function run() {
   try {
     const foodsCollection = client.db("RestoraDB").collection("foods");
 
-    // Auth API
+    // Auth API after login
     app.post("/jwt", async (req, res) => {
-      const user = req.body;
-      console.log(user);
+      const user = req?.body;
+      // console.log(user);
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: "1h",
       });
+
       res
         .cookie("token", token, {
           httpOnly: true,
           secure: true,
           sameSite: "none",
+        })
+        .send({ success: true });
+    });
+
+    // Clear cookies after logout
+    app.post("/jwt/logout", async (req, res) => {
+      const user = req?.body;
+      // console.log(user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1h",
+      });
+
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "none",
+          maxAge: 0,
         })
         .send({ success: true });
     });
@@ -83,6 +102,18 @@ async function run() {
         .skip(page * size)
         .limit(size)
         .toArray();
+      res.send(result);
+    });
+
+    // user food data
+    app.get("/userAddedFoods", async (req, res) => {
+      const user = req?.query?.user;
+      // const query = { "addedBy.email": "sunnyvai110@gmail.com" };
+      // const query = { "addedBy.email": "sunnyvai001@gmail.com" };
+      // console.log(query);
+      // const result = await foodsCollection.find(query).toArray();
+      const result = await foodsCollection.find().toArray();
+      // console.log(user);
       res.send(result);
     });
 
