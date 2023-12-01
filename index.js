@@ -121,17 +121,26 @@ async function run() {
       const user = req?.query?.user;
       const query = { "addedBy.email": user };
       const result = await foodsCollection.find(query).toArray();
-      // console.log(user);
       res.send(result);
     });
 
     // Get single food data
     app.get(`/foods/:id`, async (req, res) => {
       const foodId = req.params.id;
-      // console.log("FoodID", foodId);
       const foodQuery = { _id: new ObjectId(foodId) };
       const result = await foodsCollection.findOne(foodQuery);
       res.send(result);
+    });
+
+    // Get Top Food data
+    app.get("/topFoods", async (req, res) => {
+      const sortFood = { orderCount: -1 };
+      const topFoods = await foodsCollection
+        .find()
+        .sort(sortFood)
+        .limit(6)
+        .toArray();
+      res.send(topFoods);
     });
 
     // Add Ordered Count to every foods [one time]
@@ -142,8 +151,6 @@ async function run() {
       const options = { upsert: true };
       const getFoodInfo = await foodsCollection.findOne(filter);
       const { _id, ...foodInfo } = getFoodInfo;
-      // console.log("get food count, ", foodInfo);
-      // console.log("get food info, ", orderedFood);
       const updateCount = {
         $set: {
           orderCount: foodInfo.orderCount + 1,
@@ -164,13 +171,7 @@ async function run() {
         updateCount,
         options
       );
-      const addFoodResult = await ordersCollection.insertOne(orderedFood);
-      // console.log(
-      //   "Food Uodated Info: ",
-      //   updateCountResult,
-      //   "Food Added To the Order: ",
-      //   addFoodResult
-      // );
+      const addFoodResult = await ordersCollection.insertOne(foodInfo);
       res.send({ updateCountResult, addFoodResult });
     });
 
@@ -180,7 +181,6 @@ async function run() {
       const filter = { _id: new ObjectId(id) };
       const options = { upsert: true };
       const updatedFood = req.body;
-      // console.log(updatedFood);
       const addedBy = {
         name: updatedFood.addedBy.userName,
         email: updatedFood.addedBy.userEmail,
@@ -204,7 +204,6 @@ async function run() {
         UpdatedFoodInfo,
         options
       );
-      // console.log(result);
       res.send(result);
     });
 
