@@ -48,6 +48,10 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const foodsCollection = client.db("RestoraDB").collection("foods");
+    const ordersCollection = client.db("RestoraDB").collection("orders");
+    const subscribersCollection = client
+      .db("RestoraDB")
+      .collection("subscribers");
 
     // Auth API after login
     app.post("/jwt", async (req, res) => {
@@ -81,7 +85,7 @@ async function run() {
           sameSite: "none",
           maxAge: 0,
         })
-        .send({ success: true });
+        .send({ logout: true });
     });
 
     // Store Foods to the database
@@ -90,6 +94,13 @@ async function run() {
       console.log(newFood);
       const result = await foodsCollection.insertOne(newFood);
       console.log(result);
+      res.send(result);
+    });
+
+    // Store subscribers email to the database
+    app.post("/subscribe", async (req, res) => {
+      const subscriber = req.body;
+      const result = await subscribersCollection.insertOne(subscriber);
       res.send(result);
     });
 
@@ -108,11 +119,8 @@ async function run() {
     // user food data
     app.get("/userAddedFoods", async (req, res) => {
       const user = req?.query?.user;
-      // const query = { "addedBy.email": "sunnyvai110@gmail.com" };
-      // const query = { "addedBy.email": "sunnyvai001@gmail.com" };
-      // console.log(query);
-      // const result = await foodsCollection.find(query).toArray();
-      const result = await foodsCollection.find().toArray();
+      const query = { "addedBy.email": user };
+      const result = await foodsCollection.find(query).toArray();
       // console.log(user);
       res.send(result);
     });
@@ -124,6 +132,46 @@ async function run() {
       const foodQuery = { _id: new ObjectId(foodId) };
       const result = await foodsCollection.findOne(foodQuery);
       res.send(result);
+    });
+
+    // Add Ordered Count to every foods [one time]
+    app.put(`/orderFood/:id`, async (req, res) => {
+      const id = req.params?.id;
+      const orderedFood = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const getFoodInfo = await foodsCollection.findOne(filter);
+      const { _id, ...foodInfo } = getFoodInfo;
+      // console.log("get food count, ", foodInfo);
+      // console.log("get food info, ", orderedFood);
+      const updateCount = {
+        $set: {
+          orderCount: foodInfo.orderCount + 1,
+          quantity: orderedFood.remainingQuantity,
+        },
+      };
+      const orderedBy = {
+        buyerName: orderedFood.orderedBy.userName,
+        buyerEmail: orderedFood.orderedBy.userEmail,
+      };
+
+      foodInfo.orderedPrice = orderedFood.orderedPrice;
+      foodInfo.orderedQuantity = orderedFood.orderedQuantity;
+      foodInfo.orderedBy = orderedBy;
+
+      const updateCountResult = await foodsCollection.updateOne(
+        filter,
+        updateCount,
+        options
+      );
+      const addFoodResult = await ordersCollection.insertOne(orderedFood);
+      // console.log(
+      //   "Food Uodated Info: ",
+      //   updateCountResult,
+      //   "Food Added To the Order: ",
+      //   addFoodResult
+      // );
+      res.send({ updateCountResult, addFoodResult });
     });
 
     // Update a food data
