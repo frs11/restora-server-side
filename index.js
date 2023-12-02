@@ -124,6 +124,14 @@ async function run() {
       res.send(result);
     });
 
+    // user ordered food data
+    app.get("/orderedFood", async (req, res) => {
+      const user = req?.query?.user;
+      const query = { "orderedBy.buyerEmail": user };
+      const result = await ordersCollection.find(query).toArray();
+      res.send(result);
+    });
+
     // Get single food data
     app.get(`/foods/:id`, async (req, res) => {
       const foodId = req.params.id;
@@ -164,6 +172,7 @@ async function run() {
 
       foodInfo.orderedPrice = orderedFood.orderedPrice;
       foodInfo.orderedQuantity = orderedFood.orderedQuantity;
+      foodInfo.purchaseDate = orderedFood.purchaseDate;
       foodInfo.orderedBy = orderedBy;
 
       const updateCountResult = await foodsCollection.updateOne(
@@ -207,6 +216,13 @@ async function run() {
       res.send(result);
     });
 
+    // Delete an order
+    app.delete(`/order/delete/:id`, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await ordersCollection.deleteOne(query);
+      res.send(result);
+    });
     await client.connect();
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
