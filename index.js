@@ -7,32 +7,33 @@ require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-app.use(
-  cors({
-    origin: ["http://localhost:5173", "http://localhost:5174"],
-    credentials: true,
-  })
-);
+const corsConfig = {
+  origin: ["https://restora-mern.netlify.app", "http://localhost:5173"],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+};
+app.use(cors(corsConfig));
+app.options("", cors(corsConfig));
 app.use(express.json());
 app.use(cookieParser());
 
 // Custom Middleware
-const VerifyToken = (req, res, next) => {
-  const CookieToken = req.cookie?.token;
-  console.log("token in the verify token", CookieToken);
-  if (!CookieToken) {
-    res.status(401).send({ message: "unauthorized access!" });
-  }
-  jwt.verify(CookieToken, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-    if (err) {
-      console.log("error", err);
-      return res.status(401).send({ message: "unauthorized access!!" });
-    }
-    console.log("decoded data: ", decoded);
-    req.user = decoded;
-    next();
-  });
-};
+// const VerifyToken = (req, res, next) => {
+//   const CookieToken = req.cookie?.token;
+//   console.log("token in the verify token", CookieToken);
+//   if (!CookieToken) {
+//     res.status(401).send({ message: "unauthorized access!" });
+//   }
+//   jwt.verify(CookieToken, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+//     if (err) {
+//       console.log("error", err);
+//       return res.status(401).send({ message: "unauthorized access!!" });
+//     }
+//     console.log("decoded data: ", decoded);
+//     req.user = decoded;
+//     next();
+//   });
+// };
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.jmuxmrg.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -91,9 +92,10 @@ async function run() {
     // Store Foods to the database
     app.post("/foods", async (req, res) => {
       const newFood = req.body;
-      console.log(newFood);
+      // console.log(newFood);
+      newFood.orderCount = 0;
       const result = await foodsCollection.insertOne(newFood);
-      console.log(result);
+      // console.log(result);
       res.send(result);
     });
 
@@ -223,7 +225,7 @@ async function run() {
       const result = await ordersCollection.deleteOne(query);
       res.send(result);
     });
-    await client.connect();
+    // await client.connect();
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
